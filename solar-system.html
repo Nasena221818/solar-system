@@ -748,7 +748,8 @@ function renderBody(c, b, x, y, r, lx, ly, spin, glowScale) {
 function drawBodyScene(b, t) {
   const w = bodyWorld(b, state.simDays);
   const p = toScreen(project(w.x, w.y, w.z));
-  const r = Math.max(2.2, b.bodyR * state.cam.z) * (b.dim ? 0.85 : 1);
+  const minBody = state.mini < 168 ? 4 : 2.2;   /* planets stay visible/tappable on phones */
+  const r = Math.max(minBody, b.bodyR * state.cam.z) * (b.dim ? 0.85 : 1);
 
   b._sx = p.x; b._sy = p.y; b._r = r; b._rAU = w.rAU;
   b._depth = project(w.x, w.y, w.z).depth;
@@ -899,7 +900,8 @@ function pick(mx, my) {
   for (const b of ALL) {
     if (b._sx === undefined) continue;
     const dx = mx - b._sx, dy = my - b._sy;
-    const rad = Math.max(b._r + 3, 13);
+    /* finger-friendly target: generous pad + min 30px radius (desktop was 3/13) */
+    const rad = Math.max(b._r + 12, 30);
     const d = dx * dx + dy * dy;
     if (d < rad * rad && d < bestD) { best = b; bestD = d; }
   }
@@ -996,7 +998,7 @@ function onPointerEnd(e) {
   if (ptrs.size === 0) {
     ptrDown = false;
     scene.classList.remove('dragging');
-    if (ptrMoved < 6 && e.target === scene) {
+    if (ptrMoved < 14 && e.target === scene) {   /* real fingers jitter a few px */
       /* a clean click/tap: focus body or release */
       const hit = pick(e.clientX, e.clientY);
       if (hit) { state.focus = hit; showInfo(hit); }
@@ -1177,6 +1179,7 @@ function init() {
   const marsR = BODIES[3].orbitR, jupR = BODIES[4].orbitR;
   state.belt = makeBelt(420, marsR + 12, jupR - 8);
   wireControls();
+  if (window.innerWidth < 560 || window.innerHeight < 560) setSpeed(4);   /* calmer default on phones: planets stay tappable */
   on(window, 'pagehide', dispose, { once: true });
   state.last = performance.now();
   state.raf = requestAnimationFrame(frame);
