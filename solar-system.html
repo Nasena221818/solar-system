@@ -22,7 +22,7 @@
   html, body { width: 100%; height: 100%; overflow: hidden; background: #02030a; }
   body { font-family: var(--font-mono); color: var(--text-main); user-select: none; -webkit-user-select: none; }
 
-  #scene { display: block; width: 100vw; height: 100vh; cursor: default; touch-action: none; }
+  #scene { display: block; width: 100vw; height: 100vh; height: 100dvh; cursor: default; touch-action: none; }
   #scene.dragging { cursor: grabbing; }
   #scene.hovering { cursor: pointer; }
 
@@ -1053,6 +1053,7 @@ function wireControls() {
   on(scene, 'dblclick', onDblClick);
   on(window, 'keydown', onKey);
   on(window, 'resize', onResize);
+  if (window.visualViewport) on(window.visualViewport, 'resize', onResize);   /* address-bar collapse changes the real viewport */
 
   on(miniC, 'click', e => {
     const r = miniC.getBoundingClientRect();
@@ -1070,11 +1071,13 @@ function toggleBtn(id) {
   if (id === 'ctl-view') state.tiltTarget = el.classList.contains('active') ? TILT_MAX : 0;
 }
 
-/* ---------- resize (dpr-aware) ---------- */
+/* ---------- resize (dpr-aware; sizes from the ACTUAL canvas box, not window.innerWidth/Height —
+   on mobile the two diverge (100vh vs dynamic viewport) and taps land offset from the drawn planets) ---------- */
 function onResize() {
   state.dpr = Math.min(2.5, window.devicePixelRatio || 1);
-  state.W = window.innerWidth;
-  state.H = window.innerHeight;
+  const rect = scene.getBoundingClientRect();
+  state.W = rect.width;
+  state.H = rect.height;
   scene.width = Math.round(state.W * state.dpr);
   scene.height = Math.round(state.H * state.dpr);
   ctx.setTransform(state.dpr, 0, 0, state.dpr, 0, 0);
